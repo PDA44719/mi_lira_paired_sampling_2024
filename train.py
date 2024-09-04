@@ -217,16 +217,17 @@ def get_data(seed):
     nclass = np.max(labels)+1
 
     np.random.seed(seed)
-    if FLAGS.num_experiments is not None:
-        # Standard sampling
-        # np.random.seed(0)
-        # keep = np.random.uniform(0,1,size=(FLAGS.num_experiments, FLAGS.dataset_size))
-        # order = keep.argsort(0)
-        # keep = order < int(FLAGS.pkeep * FLAGS.num_experiments)
-        # keep = np.array(keep[FLAGS.expid], dtype=bool)
+    # Standard sampling
+    if FLAGS.num_experiments is not None and FLAGS.paired_sampling is False:
+        np.random.seed(FLAGS.seed)
+        keep = np.random.uniform(0,1,size=(FLAGS.num_experiments, FLAGS.dataset_size))
+        order = keep.argsort(0)
+        keep = order < int(FLAGS.pkeep * FLAGS.num_experiments)
+        keep = np.array(keep[FLAGS.expid], dtype=bool)
 
-        # Paired sampling
-        np.random.seed(0)
+    # Paired sampling
+    elif FLAGS.num_experiments is not None and FLAGS.paired_sampling is True:
+        np.random.seed(FLAGS.seed)
         keep = np.random.uniform(0,1,size=(FLAGS.num_experiments, FLAGS.dataset_size))
         order = keep.argsort(0)
         keep = order < int(FLAGS.pkeep * FLAGS.num_experiments)
@@ -345,7 +346,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('batch', 256, 'Batch size')
     flags.DEFINE_integer('epochs', 501, 'Training duration in number of epochs.')
     flags.DEFINE_string('logdir', 'experiments', 'Directory where to save checkpoints and tensorboard data.')
-    flags.DEFINE_integer('seed', None, 'Training seed.')
+    flags.DEFINE_integer('seed', 0, 'Training seed.')
     flags.DEFINE_float('pkeep', .5, 'Probability to keep examples.')
     flags.DEFINE_integer('expid', None, 'Experiment ID')
     flags.DEFINE_integer('num_experiments', None, 'Number of experiments')
@@ -357,5 +358,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('save_steps', 10, 'how often to get save model.')
     flags.DEFINE_integer('patience', None, 'Early stopping after this many epochs without progress')
     flags.DEFINE_bool('tunename', False, 'Use tune name?')
+    flags.DEFINE_bool('paired_sampling', False, 'Use paired sampling technique for constructing the model datasets?')
+    flags.DEFINE_integer('target_record', 1, 'What is the target record? Relevant only for paired sampling)')
     app.run(main)
 
