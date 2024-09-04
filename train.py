@@ -218,11 +218,35 @@ def get_data(seed):
 
     np.random.seed(seed)
     if FLAGS.num_experiments is not None:
+        # Standard sampling
+        # np.random.seed(0)
+        # keep = np.random.uniform(0,1,size=(FLAGS.num_experiments, FLAGS.dataset_size))
+        # order = keep.argsort(0)
+        # keep = order < int(FLAGS.pkeep * FLAGS.num_experiments)
+        # keep = np.array(keep[FLAGS.expid], dtype=bool)
+
+        # Paired sampling
         np.random.seed(0)
         keep = np.random.uniform(0,1,size=(FLAGS.num_experiments, FLAGS.dataset_size))
         order = keep.argsort(0)
         keep = order < int(FLAGS.pkeep * FLAGS.num_experiments)
         keep = np.array(keep[FLAGS.expid], dtype=bool)
+        if FLAGS.expid % 2 == 0:  # Don't do paired sampling on even ids
+            keep = np.array(keep[FLAGS.expid], dtype=bool)
+        else:  # Do paired sampling on odd ids
+            keep = np.array(keep[FLAGS.expid-1], dtype=bool)
+
+            # Invert the boolean value of the target record
+            keep[FLAGS.target_record] = True if keep[FLAGS.target_record]==False else False
+
+            # Invert the boolean value of another record
+            for i in range(len(keep)):
+                if i == FLAGS.target_record:
+                    continue
+                if keep[i] == keep[FLAGS.target_record]:
+                    keep[i] = True if keep[i]==False else False
+                    break
+
     else:
         keep = np.random.uniform(0, 1, size=FLAGS.dataset_size) <= FLAGS.pkeep
 
