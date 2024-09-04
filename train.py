@@ -67,6 +67,11 @@ class TrainLoop(objax.Module):
             if jn.isnan(v):
                 raise ValueError('NaN, try reducing learning rate', k)
             if summary is not None:
+                try:
+                    if len(v) == 1:
+                        v = v[0]
+                except:
+                    pass
                 summary.scalar(k, float(v))
 
     def train(self, num_train_epochs: int, train_size: int, train: DataSet, test: DataSet, logdir: str, save_steps=100, patience=None):
