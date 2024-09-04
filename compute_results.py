@@ -36,31 +36,9 @@ def sweep(score, x):
 
 def load_data(p):
     """
-    Load our saved keep and scores and put them into two global matrices.
+    Load our saved keep and scores, and put them into two big matrices.
     """
     global scores, keep
-    scores = []
-    keep = []
-
-    for root,ds,_ in os.walk(p):
-        for f in ds:
-            if not f.startswith("experiment"): continue
-            if not os.path.exists(os.path.join(root,f,"scores")): continue
-            last_epoch = sorted(os.listdir(os.path.join(root,f,"scores")))
-            if len(last_epoch) == 0: continue
-            scores.append(np.load(os.path.join(root,f,"scores",last_epoch[-1])))
-            keep.append(np.load(os.path.join(root,f,"keep.npy")))
-
-    scores = np.array(scores)
-    keep = np.array(keep)[:,:scores.shape[1]]
-
-    return scores, keep
-
-
-def load_data_non_global(p):
-    """
-    Load our saved keep and scores, and put them into two local matrices.
-    """
     scores = []
     keep = []
 
@@ -92,8 +70,8 @@ def generate_online(keep, scores, check_keep, check_scores, target_record, in_si
     dat_in.append(scores[keep[:,target_record],target_record,:])
     dat_out.append(scores[~keep[:,target_record],target_record,:])
 
-    dat_in = np.array([x[:7] for x in dat_in])
-    dat_out = np.array([x[:7] for x in dat_out])
+    dat_in = np.array([x[:(FLAGS.num_of_experiments//2 - 1)] for x in dat_in])
+    dat_out = np.array([x[:(FLAGS.num_of_experiments//2 - 1)] for x in dat_out])
 
     mean_in = np.median(dat_in, 1)
     mean_out = np.median(dat_out, 1)
@@ -115,52 +93,19 @@ def generate_online(keep, scores, check_keep, check_scores, target_record, in_si
     return prediction, answer
 
 
-def calculate_results(fn, keep, scores, sweep_fn=sweep):
+def calculate_results(fn, keep, scores, paired_sampling, sweep_fn=sweep):
     """
-    For a set of standard attacks, print two lists: the accuracy results and the 
-    AUC results of the target records
-    """
-    acc_list, auc_list = [], []
-    for record in FLAGS.target_records:
-        output = []
-        target_predictions = []
-        target_answers = []
-        for i in range(16):
-            try:
-                prediction, answer = fn(np.array(list(keep)[0:i] + list(keep)[i+1:]),
-                                        np.array(list(scores)[0:i] + list(scores)[i+1:]),
-                                        keep[i:i+1],
-                                        scores[i:i+1],
-                                        record)
-
-                target_predictions.append(prediction)
-                target_answers.append(answer)
-            except:
-                pass
-
-
-        _, _, auc, acc = sweep_fn(np.array(target_predictions), np.array(target_answers, dtype=bool))
-
-        acc_list.append(acc)
-        auc_list.append(auc)
-
-    print(acc_list)
-    print(auc_list)
-    return output
-
-def calculate_results_paired(fn, keep, scores, sweep_fn=sweep):
-    """
-    For a set of paired attacks, print two lists: the accuracy results and the 
-    AUC results of the target records
+    Compute and print the accuracy and AUC results for the attacks.
     """
     acc_list, auc_list = [], []
     for record in FLAGS.target_records:
-        # For paired attacks, data has to be reloaded after every calculation
-        scores, keep = load_data_non_global(f'{FLAGS.exp_dir}/record_{record}')
+        if paired_sampling:  # Reload data if paired sampling is True
+            scores, keep = load_data(f'{FLAGS.exp_dir}/record_{record}')
+
         output = []
         target_predictions = []
         target_answers = []
-        for i in range(16):
+        for i in range(FLAGS.num_of_experiments):
             try:
                 prediction, answer = fn(np.array(list(keep)[0:i] + list(keep)[i+1:]),
                                         np.array(list(scores)[0:i] + list(scores)[i+1:]),
@@ -186,7 +131,7 @@ def calculate_results_paired(fn, keep, scores, sweep_fn=sweep):
 #def fig_fpr_tpr():
 
 #    calculate_results(generate_online,
-#            keep, scores,
+#            keep, scores, FLAGS.paired_sampling
 #    )
 
 #    calculate_results(functools.partial(generate_online, fix_variance=True),
@@ -205,6 +150,7 @@ def calculate_results_paired(fn, keep, scores, sweep_fn=sweep):
 #    )
 
 
+
 def main(argv):
     del argv
     try:
@@ -213,16 +159,13 @@ def main(argv):
         print('--target_records error: The list provided must contain comma-separated integer values')
         return
 
-    if FLAGS.paired_sampling == False:
-        load_data(FLAGS.exp_dir)
-        calculate_results(generate_online, keep, scores)
-    else:
-        load_data(FLAGS.exp_dir)
-        calculate_results_paired(generate_online, keep, scores)
+    load_data(FLAGS.exp_dir)
+    calculate_results(generate_online, keep, scores, FLAGS.paired_sampling)
 
 
 if __name__ == '__main__':
     flags.DEFINE_list('target_records', None, 'Target records used in the experiments.')
     flags.DEFINE_string('exp_dir', 'exp/cifar10/standard', 'Directory where experiments were saved.')
     flags.DEFINE_bool('paired_sampling', False, 'Paired sampling attack?')
+    flags.DEFINE_integer('num_of_experiments', 16, 'Number of experiments conducted.')
     app.run(main)
