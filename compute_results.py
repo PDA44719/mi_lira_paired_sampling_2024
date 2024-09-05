@@ -124,8 +124,8 @@ def calculate_results(fn, keep, scores, paired_sampling, sweep_fn=sweep):
         acc_list.append(acc)
         auc_list.append(auc)
 
-    print(acc_list)
-    print(auc_list)
+    print(f'Accuracy -> {acc_list}')
+    print(f'AUC -> {auc_list}')
     return output
 
 #def fig_fpr_tpr():
