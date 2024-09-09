@@ -2,7 +2,7 @@
 
 This directory contains code to reproduce the online LiRA attack used in the paper:
 
-**"Paired Sampling Technique to Enhance state-of-the-art Membership Inference Attacks"** <br>
+**"Paired sampling Technique to Enhance Shadow Modelling-based Membership Inference Attacks"** <br>
 
 This code was built on top of the repository created for the paper *"Membership Inference Attacks From First Principles"* by Nicholas Carlini et al [1].
 
@@ -20,6 +20,11 @@ and also JAX + ObJAX will be required. You can follow the build instructions:
 https://github.com/google/objax
 https://objax.readthedocs.io/en/latest/installation_setup.html
 
+### Attack Naming Clarification 
+Please, keep in mind that whenever the *standard attack* or *standard version* is discussed in this repository, it is referring to the *random sampling* technique as explained in the paper. 
+
+*Random sampling* was called *standard sampling* in earlier versions of the report, and that is why the name standard is used throughout this repository.
+
 ### Reproducing the attacks
 
 #### 1. Training
@@ -35,7 +40,7 @@ It must be noted that, while for the standard attack 16 models need to be traine
 
 The scripts can be adapted to use multiple GPUs.
 
-These scripts will train the shadow models to 88-90% accuracy each, and will output a series of files under the directory exp/cifar10 with structure:
+These scripts will train the shadow models to 86-89% accuracy each, and will output a series of files under the directory exp/cifar10 with structure:
 
 ```
 exp/cifar10/
@@ -56,7 +61,7 @@ exp/cifar10/
 ---- tb/
 ```
 
-where N1 is the target record that was attacks (an integer).
+where N1 is the target record that was attacked (an integer).
 
 #### 2. Copying the even-numbered experiments
 This step ust be completed after all the experiments (standard and paired) have been completed.
